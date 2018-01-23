@@ -7,7 +7,7 @@ const { EventEmitter } = require('events');
 
 const { OPCodes, CloseCodes } = require('./Constants');
 
-class WebSocket extends EventEmitter {
+class WebSocketV4 extends EventEmitter {
 	constructor(url, token) {
 		super();
 
@@ -206,4 +206,4 @@ class WebSocket extends EventEmitter {
 	}
 }
 
-module.exports = WebSocket;
+module.exports = WebSocketV4;

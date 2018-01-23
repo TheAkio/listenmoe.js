@@ -1,11 +1,5 @@
 'use strict';
 
-module.exports.Gateway = {
-	v4: 'wss://listen.moe/gateway',
-};
-
-module.exports.Gateway.latest = module.exports.Gateway.v4;
-
 module.exports.OPCodes = {
 	// OP 0 goes in both directions
 	IDENTIFY: 0,
