@@ -46,19 +46,18 @@ class WebSocket extends EventEmitter {
 		this.cli.on('close', this.onClose.bind(this));
 	}
 
-	close(code, reason) {
+	close(code) {
 		this.stopHeartbeat();
 
 		this.connected = false;
 		this.ready = false;
 
-		this.cli.terminate();
-		this.emit('close', { code, reason });
+		this.cli.close(code);
 	}
 
 	disconnect() {
 		this.autoReconnect = false;
-		this.close(CloseCodes.MANUAL, 'Connection was manually closed.');
+		this.close(CloseCodes.DISCONNECT);
 	}
 
 	startHeartbeat(ms) {
@@ -91,14 +90,13 @@ class WebSocket extends EventEmitter {
 
 		const handleReply = () => {
 			handleLatency();
-			this.removeListener('hback', handleReply);
 			clearTimeout(timer);
 		};
 
 		const timer = setTimeout(() => {
 			handleLatency();
 			this.removeListener('hback', handleReply);
-			this.close(CloseCodes.TIMEOUT, 'Client didn\'t send HBACK inbetween 5 seconds.');
+			this.close(CloseCodes.TIMEOUT);
 		}, 5 * 1000);
 
 		this.once('hback', handleReply);
@@ -122,6 +120,15 @@ class WebSocket extends EventEmitter {
 	onOpen() {
 		this.connected = true;
 		this.ready = false;
+
+		const onReady = () => clearTimeout(readyTimeout);
+
+		this.once('ready', onReady);
+
+		const readyTimeout = setTimeout(() => {
+			this.removeListener('ready', onReady);
+			this.close(CloseCodes.READY_TIMEOUT);
+		}, 5 * 1000);
 
 		this.sendJSON({
 			op: OPCodes.IDENTIFY,
@@ -173,18 +180,18 @@ class WebSocket extends EventEmitter {
 		this.ready = false;
 
 		this.emit('error', err);
-		this.emit('close', { code: CloseCodes.ERROR, reason: err ? err.message ? err.message : JSON.stringify(err) : err, error: err });
+		this.emit('close', CloseCodes.ERROR);
 
 		this.doReconnect();
 	}
 
-	onClose() {
+	onClose(code) {
 		this.stopHeartbeat();
 
 		this.connected = false;
 		this.ready = false;
 
-		this.emit('close', { code: CloseCodes.BY_PEER, reason: 'Connection was closed by peer.' });
+		this.emit('close', code);
 
 		this.doReconnect();
 	}

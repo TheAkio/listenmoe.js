@@ -3,7 +3,7 @@
 const { EventEmitter } = require('events');
 
 const WebSocket = require('./WebSocket');
-const { Gateway } = require('./Constants');
+const { Gateway, CloseCodes } = require('./Constants');
 
 class ListenMoeJS extends EventEmitter {
 	constructor(token) {
@@ -54,11 +54,12 @@ class ListenMoeJS extends EventEmitter {
 	}
 }
 
-function exp(...args) {
+function listenMoeJS(...args) {
 	return new ListenMoeJS(...args);
 }
 
-exp.ListenMoeJS = ListenMoeJS;
-exp.Gateway = Gateway;
+listenMoeJS.ListenMoeJS = ListenMoeJS;
+listenMoeJS.Gateway = Gateway;
+listenMoeJS.CloseCodes = CloseCodes;
 
-module.exports = exp;
+module.exports = listenMoeJS;

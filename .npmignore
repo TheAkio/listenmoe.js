@@ -2,3 +2,4 @@
 /test/
 .eslintrc.json
 .gitignore
+start.js
