@@ -1,0 +1,29 @@
+{
+  "name": "listenmoe.js",
+  "version": "0.0.1",
+  "description": "A NodeJS wrapper for the listen.moe WebSocket",
+  "main": "src/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TheAkio/listenmoe.js.git"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "author": "TheAkio",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/TheAkio/listenmoe.js/issues"
+  },
+  "homepage": "https://github.com/TheAkio/listenmoe.js#readme",
+  "dependencies": {
+    "uws": "^9.14.0"
+  },
+  "browser": {
+    "uws": false
+  },
+  "devDependencies": {
+    "eslint": "^4.16.0",
+    "mocha": "^5.0.0"
+  }
+}
