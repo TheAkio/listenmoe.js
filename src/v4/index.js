@@ -15,10 +15,11 @@ class ListenMoeV4 extends EventEmitter {
 		super();
 
 		this._socket = new WebSocket('wss://listen.moe/gateway', token);
+		this._socket.forwardEvents(this);
 
 		this._data = null;
 
-		this._socket.on('message', (pkt) => {
+		this.on('message', (pkt) => {
 			if (!pkt.t && !pkt.d) return;
 
 			switch (pkt.t) {
@@ -27,10 +28,6 @@ class ListenMoeV4 extends EventEmitter {
 					this.emit('updateTrack', this._data);
 					break;
 			}
-		});
-
-		this._socket.on('error', (...args) => {
-			this.emit('error', ...args);
 		});
 	}
 
