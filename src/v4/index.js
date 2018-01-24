@@ -79,7 +79,13 @@ class ListenMoeV4 extends EventEmitter {
 			}, 5000);
 
 			this.once('trackUpdateResponse', func);
-			this._socket.sendJSON({ op: 2 });
+			try {
+				this._socket.sendJSON({ op: 2 });
+			} catch (e) {
+				clearTimeout(timeout);
+				this.removeListener('trackUpdateResponse', func);
+				reject(e);
+			}
 		});
 	}
 }

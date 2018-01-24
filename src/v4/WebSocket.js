@@ -132,6 +132,7 @@ class WebSocketV4 extends EventEmitter {
 	}
 
 	sendJSON(ob) {
+		if (!this.cli) throw new Error('WebSocket not connected');
 		const stringify = JSON.stringify(ob);
 		this.emit('debug', `[WebSocketV4] -> ${stringify}`);
 		this.emit('raw', { dir: 'out', pkt: ob });
