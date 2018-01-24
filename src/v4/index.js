@@ -46,26 +46,49 @@ class ListenMoeV4 extends EventEmitter {
 		});
 	}
 
+	/**
+	 * Connects to the listen.moe WebSocket
+	 * Auto-Reconnect is handled automatically
+	 */
 	connect() {
 		this._socket.connect();
 	}
 
+	/**
+	 * Disconnects from the listen.moe WebSocket
+	 */
 	disconnect() {
 		this._socket.disconnect();
 	}
 
+	/**
+	 * Returns the average ping to the WebSocket
+	 * @returns {number} The ping in milliseconds
+	*/
 	getPing() {
 		return this._socket.ping;
 	}
 
+	/**
+	 * Returns the last 5 pings
+	 * @returns {number[]} An array of pings in milliseconds
+	 */
 	getLatencyData() {
 		return this._socket.latencyData;
 	}
 
+	/**
+	 * Returns the current track
+	 * @returns {any} The current track from the WebSocket
+	 */
 	getCurrentTrack() {
 		return this._data;
 	}
 
+	/**
+	 * Fetches the current track from the listen.moe WebSocket
+	 * @returns {Promise<any>} A promise that resolves with the track data when the data is received
+	 */
 	fetchTrack() {
 		return new Promise((resolve, reject) => {
 			const func = (d) => {
