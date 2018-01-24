@@ -19,13 +19,28 @@ class ListenMoeV4 extends EventEmitter {
 
 		this._data = null;
 
+		const handleIncomingTrack = (pkt) => {
+			this.emit('updateData', pkt.d);
+			if (this._data && pkt.d.song.id === this._data.song.id) {
+				this._data = pkt.d;
+			} else {
+				// I want the data to be update before the event is emitted
+				this._data = pkt.d;
+				this.emit('updateTrack', this._data);
+			}
+
+			if (pkt.t === 'TRACK_UPDATE_REQUEST') {
+				this.emit('trackUpdateResponse', this._data);
+			}
+		};
+
 		this.on('message', (pkt) => {
 			if (!pkt.t && !pkt.d) return;
 
 			switch (pkt.t) {
 				case 'TRACK_UPDATE':
-					this._data = pkt.d;
-					this.emit('updateTrack', this._data);
+				case 'TRACK_UPDATE_REQUEST':
+					handleIncomingTrack(pkt);
 					break;
 			}
 		});
@@ -49,6 +64,23 @@ class ListenMoeV4 extends EventEmitter {
 
 	getCurrentTrack() {
 		return this._data;
+	}
+
+	fetchTrack() {
+		return new Promise((resolve, reject) => {
+			const func = (d) => {
+				clearTimeout(timeout);
+				resolve(d);
+			};
+
+			const timeout = setTimeout(() => {
+				this.removeListener('trackUpdateResponse', func);
+				reject(new Error('Track request took too long'));
+			}, 5000);
+
+			this.once('trackUpdateResponse', func);
+			this._socket.sendJSON({ op: 2 });
+		});
 	}
 }
 

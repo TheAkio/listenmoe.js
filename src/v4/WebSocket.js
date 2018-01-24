@@ -225,7 +225,7 @@ class WebSocketV4 extends EventEmitter {
 
 	doReconnect() {
 		if (!this.reconnect && this.autoReconnect) {
-			this.emit('debug', `[WebSocketV4] Waiting 5000ms before reconnect`);
+			this.emit('debug', `[WebSocketV4] Waiting 5000ms before reconnecting`);
 			this.reconnect = setTimeout(() => {
 				this.reconnect = null;
 				this.connect();
