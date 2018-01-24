@@ -1,6 +1,6 @@
 {
   "name": "listenmoe.js",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A NodeJS wrapper for the listen.moe WebSocket",
   "main": "src/index.js",
   "repository": {
@@ -17,10 +17,12 @@
   },
   "homepage": "https://github.com/TheAkio/listenmoe.js#readme",
   "dependencies": {
-    "uws": "^9.14.0"
+    "uws": "^9.14.0",
+    "ws": "^4.0.0"
   },
   "browser": {
-    "uws": false
+    "uws": false,
+    "ws": false
   },
   "devDependencies": {
     "eslint": "^4.16.0",

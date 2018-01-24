@@ -1,13 +1,26 @@
 'use strict';
 
-// eslint-disable-next-line no-undef
-const WS = typeof window !== 'undefined' ? window.WebSocket : require('uws');
+let WS, wsLib;
+if (typeof window !== 'undefined') {
+	// Might add browser support in the future
+	// eslint-disable-next-line no-undef
+	WS = window.WebSocket;
+	wsLib = 'Browser';
+} else {
+	try {
+		WS = require('uws');
+		wsLib = 'uws';
+	} catch (e) {
+		WS = require('ws');
+		wsLib = 'ws';
+	}
+}
 
 const { EventEmitter } = require('events');
 
 const { OPCodes, CloseCodes } = require('./Constants');
 
-class WebSocket extends EventEmitter {
+class WebSocketV4 extends EventEmitter {
 	constructor(url, token) {
 		super();
 
@@ -26,6 +39,12 @@ class WebSocket extends EventEmitter {
 		this._latency = [null, null, null, null, null];
 	}
 
+	forwardEvents(eventEmitter) {
+		['debug', 'heartbeat', 'raw', 'open', 'ready', 'hback', 'message', 'error', 'close'].forEach((event) => {
+			this.on(event, (...args) => eventEmitter.emit(event, ...args));
+		});
+	}
+
 	get ping() {
 		const clean = this._latency.filter(l => !!l);
 		return clean.reduce((a, b) => a + b, 0) / clean.length;
@@ -38,6 +57,7 @@ class WebSocket extends EventEmitter {
 	connect() {
 		if (this.cli) this.cli.removeAllListeners();
 
+		this.emit('debug', `[WebSocketV4] Attempting to connect with WebSocket library "${wsLib}"`);
 		this.cli = new WS(this.url);
 
 		this.cli.on('open', this.onOpen.bind(this));
@@ -46,23 +66,24 @@ class WebSocket extends EventEmitter {
 		this.cli.on('close', this.onClose.bind(this));
 	}
 
-	close(code, reason) {
+	close(code) {
+		this.emit('debug', `[WebSocketV4] Closing WebSocket with code ${code}`);
 		this.stopHeartbeat();
 
 		this.connected = false;
 		this.ready = false;
 
-		this.cli.terminate();
-		this.emit('close', { code, reason });
+		this.cli.close(code);
 	}
 
 	disconnect() {
 		this.autoReconnect = false;
-		this.close(CloseCodes.MANUAL, 'Connection was manually closed.');
+		this.close(CloseCodes.DISCONNECT);
 	}
 
 	startHeartbeat(ms) {
 		if (this.heartbeat) return;
+		this.emit('debug', '[WebSocketV4] Starting heartbeat interval');
 		ms = parseInt(ms) > 1000 ? parseInt(ms) : 1000;
 		this.heartbeat = setInterval(() => {
 			this.sendHeartbeat();
@@ -71,6 +92,7 @@ class WebSocket extends EventEmitter {
 
 	stopHeartbeat() {
 		if (!this.heartbeat) return;
+		this.emit('debug', '[WebSocketV4] Stopping heartbeat interval');
 		clearInterval(this.heartbeat);
 	}
 
@@ -91,14 +113,13 @@ class WebSocket extends EventEmitter {
 
 		const handleReply = () => {
 			handleLatency();
-			this.removeListener('hback', handleReply);
 			clearTimeout(timer);
 		};
 
 		const timer = setTimeout(() => {
 			handleLatency();
 			this.removeListener('hback', handleReply);
-			this.close(CloseCodes.TIMEOUT, 'Client didn\'t send HBACK inbetween 5 seconds.');
+			this.close(CloseCodes.TIMEOUT);
 		}, 5 * 1000);
 
 		this.once('hback', handleReply);
@@ -110,18 +131,28 @@ class WebSocket extends EventEmitter {
 		});
 	}
 
-	send(raw) {
-		return this.cli.send(raw);
-	}
-
 	sendJSON(ob) {
+		if (!this.cli) throw new Error('WebSocket not connected');
+		const stringify = JSON.stringify(ob);
+		this.emit('debug', `[WebSocketV4] -> ${stringify}`);
 		this.emit('raw', { dir: 'out', pkt: ob });
-		return this.send(JSON.stringify(ob));
+		return this.cli.send(stringify);
 	}
 
 	onOpen() {
 		this.connected = true;
 		this.ready = false;
+
+		this.emit('debug', '[WebSocketV4] WebSocket open');
+
+		const onReady = () => clearTimeout(readyTimeout);
+
+		this.once('ready', onReady);
+
+		const readyTimeout = setTimeout(() => {
+			this.removeListener('ready', onReady);
+			this.close(CloseCodes.READY_TIMEOUT);
+		}, 5 * 1000);
 
 		this.sendJSON({
 			op: OPCodes.IDENTIFY,
@@ -139,6 +170,7 @@ class WebSocket extends EventEmitter {
 			return;
 		}
 
+		this.emit('debug', `[WebSocketV4] <- ${JSON.stringify(pkt)}`);
 		this.emit('raw', { dir: 'in', pkt });
 
 		if (pkt.op == null) return;
@@ -155,6 +187,7 @@ class WebSocket extends EventEmitter {
 
 				this.ready = true;
 
+				this.emit('debug', '[WebSocketv4] WebSocket ready');
 				this.emit('ready', pkt);
 				break;
 			case OPCodes.HBACK:
@@ -172,25 +205,28 @@ class WebSocket extends EventEmitter {
 		this.connected = false;
 		this.ready = false;
 
+		this.emit('debug', `[WebSocketV4] Error: ${err ? err.message ? err.message : JSON.stringify(err) : err}`);
 		this.emit('error', err);
-		this.emit('close', { code: CloseCodes.ERROR, reason: err ? err.message ? err.message : JSON.stringify(err) : err, error: err });
+		this.emit('close', CloseCodes.ERROR);
 
 		this.doReconnect();
 	}
 
-	onClose() {
+	onClose(code) {
 		this.stopHeartbeat();
 
 		this.connected = false;
 		this.ready = false;
 
-		this.emit('close', { code: CloseCodes.BY_PEER, reason: 'Connection was closed by peer.' });
+		this.emit('debug', `[WebSocketV4] Closed WebSocket with code ${code}`);
+		this.emit('close', code);
 
 		this.doReconnect();
 	}
 
 	doReconnect() {
 		if (!this.reconnect && this.autoReconnect) {
+			this.emit('debug', `[WebSocketV4] Waiting 5000ms before reconnecting`);
 			this.reconnect = setTimeout(() => {
 				this.reconnect = null;
 				this.connect();
@@ -199,4 +235,4 @@ class WebSocket extends EventEmitter {
 	}
 }
 
-module.exports = WebSocket;
+module.exports = WebSocketV4;

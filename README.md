@@ -22,9 +22,20 @@ moe.on('updateTrack', (data) => { // When listen.moe updates the track
     // Do something with it
 });
 
-moe.getCurrentTrack() // Returns the current track (or null if there is none)
+moe.on('error', (error) => { // Handle any thrown errors
+    // Handle it or ignore
+});
 
 moe.connect(); // Connect to the WebSocket
+
+moe.getCurrentTrack() // Returns the current track (or null if there is none)
+
+moe.fetchTrack() // Send a track update request to receive the newest data
+.then(t => {
+    // Do something with it
+}).catch(e => {
+    // Handle it or ignore
+}):
 ```
 
 Links
