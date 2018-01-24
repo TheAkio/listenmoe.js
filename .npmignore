@@ -1,5 +1,7 @@
 /node_modules/
 /test/
+/.vscode/
 .eslintrc.json
 .gitignore
-start.js
+yarn.lock
+package-lock.json
