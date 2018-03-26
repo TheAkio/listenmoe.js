@@ -9,10 +9,10 @@ class ListenMoeV4 extends EventEmitter {
 	/**
 	 * Creates a ListenMoeV4 object
 	 *
-	 * @param {string?} token A JWT from listen.moe
 	 * @param {string?} library The library to be used, valid libraries are jpop and kpop (defaults to jpop)
+	 * @param {string?} token A JWT from listen.moe
 	 */
-	constructor(token, library) {
+	constructor(library, token) {
 		super();
 
 		const url = library === 'kpop' ? 'wss://listen.moe/kpop/gateway' : 'wss://listen.moe/gateway';
