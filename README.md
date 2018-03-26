@@ -16,7 +16,8 @@ How to use
 ```js
 const ListenMoeJS = require('listenmoe.js');
 
-const moe = new ListenMoeJS();
+// For the jpop WebSocket you can also leave the parameters empty
+const moe = new ListenMoeJS('jpop'); // or "kpop" if you want the trackdata from there
 
 moe.on('updateTrack', (data) => { // When listen.moe updates the track
     // Do something with it
